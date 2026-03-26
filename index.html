@@ -20,45 +20,50 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
+import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyCUeQ8VaAlOm3dlVvOIzRVAA_GAUCgZnkY",
-      authDomain: "fir-f5586.firebaseapp.com",
-      projectId: "fir-f5586",
-      messagingSenderId: "569764472583",
-      appId: "1:569764472583:web:554781f7e0a3e529ce47a2"
-    };
+const firebaseConfig = {
+  apiKey: "AIzaSyCUeQ8VaAlOm3dlVvOIzRVAA_GAUCgZnkY",
+  authDomain: "fir-f5586.firebaseapp.com",
+  projectId: "fir-f5586",
+  messagingSenderId: "569764472583",
+  appId: "1:569764472583:web:554781f7e0a3e529ce47a2"
+};
 
-    const app = initializeApp(firebaseConfig);
-    const messaging = getMessaging(app);
+const app = initializeApp(firebaseConfig);
+const messaging = getMessaging(app);
 
-    // Funktion direkt an den Button binden (sicherer als onclick im HTML bei Modulen)
-    document.getElementById('btn').addEventListener('click', async () => {
-      try {
-        console.log("Anfrage gestartet...");
-        const permission = await Notification.requestPermission();
-        
-        if (permission === "granted") {
-          const token = await getToken(messaging, {
-            vapidKey: "BCXUA77ALdw0o8-xQ-VXOHvNPi9CQqE560qZxRqjSX0-Lavj2MOp0LOeaQ9V4yxgw3B715Eos90OMryifm7rmKc"
-          });
-          
-          if (token) {
-            document.getElementById('token-display').style.display = 'block';
-            document.getElementById('token-text').innerText = token;
-            console.log("TOKEN:", token);
-          } else {
-            alert("Kein Token erhalten. Berechtigung prüfen!");
-          }
-        } else {
-          alert("Berechtigung verweigert!");
-        }
-      } catch (error) {
-        console.error("Fehler:", error);
-        alert("Fehler: " + error.message);
-      }
+document.getElementById('btn').addEventListener('click', async () => {
+  try {
+    // 1. Berechtigung abfragen
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+      alert("Berechtigung verweigert!");
+      return;
+    }
+
+    // 2. Service Worker MANUELL registrieren (Wichtig für GitHub Pages!)
+    const registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+    console.log("Service Worker registriert:", registration);
+
+    // 3. Token abrufen und die Registrierung mitgeben
+    const token = await getToken(messaging, {
+      vapidKey: "BCXUA77ALdw0o8-xQ-VXOHvNPi9CQqE560qZxRqjSX0-Lavj2MOp0LOeaQ9V4yxgw3B715Eos90OMryifm7rmKc",
+      serviceWorkerRegistration: registration
     });
+
+    if (token) {
+      document.getElementById('token-display').style.display = 'block';
+      document.getElementById('token-text').innerText = token;
+      console.log("TOKEN:", token);
+    } else {
+      alert("Kein Token erhalten.");
+    }
+  } catch (error) {
+    console.error("Fehler Details:", error);
+    alert("Fehler: " + error.message);
+  }
+});
   </script>
 </body>
 </html>
